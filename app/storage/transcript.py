@@ -1,11 +1,13 @@
-import os, hashlib
+import os, hashlib, json
 from pathlib import Path
+from typing import Tuple
 
 TRANSCRIPTS_DIR = Path('transcripts')
 TRANSCRIPTS_DIR.mkdir(exist_ok=True)
 
 class Transcript:
     def __init__(self, name: str):
+        self.name = name
         self.path = TRANSCRIPTS_DIR / f"{name}.log"
         # ensure file exists
         self.path.touch(exist_ok=True)
@@ -19,3 +21,21 @@ class Transcript:
         with open(self.path, 'rb') as f:
             data = f.read()
         return hashlib.sha256(data).hexdigest()
+
+    def export_receipt(self, private_key, peer: str, first_seq: int, last_seq: int) -> dict:
+        tx_hash = self.compute_transcript_hash()
+        # Sign tx_hash (hex) bytes
+        sig = private_key.sign(tx_hash.encode(), padding=__import__('cryptography.hazmat.primitives.asymmetric.padding').PKCS1v15(), algorithm=__import__('cryptography.hazmat.primitives.hashes').SHA256())
+        import base64
+        receipt = {
+            "type": "receipt",
+            "peer": peer,
+            "first_seq": first_seq,
+            "last_seq": last_seq,
+            "transcript_sha256": tx_hash,
+            "sig": base64.b64encode(sig).decode()
+        }
+        # write receipt file
+        with open(TRANSCRIPTS_DIR / f"{self.name}.receipt.json", 'w') as f:
+            json.dump(receipt, f, indent=2)
+        return receipt

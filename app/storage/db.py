@@ -50,7 +50,6 @@ def verify_user(email: str, password: str) -> bool:
     if not row:
         return False
     salt, stored = row
-    # salt is bytes from VARBINARY, ensure bytes
     if isinstance(salt, str):
         salt = salt.encode()
     calc = hashlib.sha256(salt + password.encode()).hexdigest()
