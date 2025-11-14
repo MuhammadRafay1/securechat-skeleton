@@ -24,3 +24,10 @@ def rsa_verify(public_key, data: bytes, signature: bytes) -> bool:
         return True
     except Exception:
         return False
+
+def rsa_verify_b64(public_key, data: bytes, signature_b64: str) -> bool:
+    sig = base64.b64decode(signature_b64)
+    return rsa_verify(public_key, data, sig)
+
+def pubkey_from_cert(cert):
+    return cert.public_key()
