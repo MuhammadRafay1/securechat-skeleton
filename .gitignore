@@ -1,0 +1,5 @@
+certs/
+transcripts/
+.env
+__pycache__/
+*.pyc
