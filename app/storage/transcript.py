@@ -1,6 +1,8 @@
 import os, hashlib, json
 from pathlib import Path
 from typing import Tuple
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.asymmetric import padding
 
 TRANSCRIPTS_DIR = Path('transcripts')
 TRANSCRIPTS_DIR.mkdir(exist_ok=True)
@@ -24,8 +26,12 @@ class Transcript:
 
     def export_receipt(self, private_key, peer: str, first_seq: int, last_seq: int) -> dict:
         tx_hash = self.compute_transcript_hash()
-        # Sign tx_hash (hex) bytes
-        sig = private_key.sign(tx_hash.encode(), padding=__import__('cryptography.hazmat.primitives.asymmetric.padding').PKCS1v15(), algorithm=__import__('cryptography.hazmat.primitives.hashes').SHA256())
+        # Sign tx_hash (hex) bytes - FIXED: proper imports
+        sig = private_key.sign(
+            tx_hash.encode(), 
+            padding.PKCS1v15(), 
+            hashes.SHA256()
+        )
         import base64
         receipt = {
             "type": "receipt",
