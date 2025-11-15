@@ -22,7 +22,7 @@ def now_ms():
 def recv_json_line(sock, timeout=None):
     """
     Read bytes until newline and return parsed JSON.
-    Returns None on EOF/timeout.
+    Returns None on EOF/timeout/connection errors.
     """
     buf = []
     sock.settimeout(timeout)
@@ -35,6 +35,9 @@ def recv_json_line(sock, timeout=None):
                 break
             buf.append(ch)
     except socket.timeout:
+        return None
+    except (ConnectionResetError, ConnectionAbortedError, BrokenPipeError, OSError):
+        # Connection was closed/aborted by peer
         return None
     finally:
         sock.settimeout(None)
@@ -215,7 +218,19 @@ def run_client(server_host='127.0.0.1', server_port=9000):
     # session closure: export receipt and send to server
     receipt = my_transcript.export_receipt(my_key, 'client', 1, seqno)
     s.sendall((json.dumps({'type':'receipt','payload':receipt}) + '\n').encode())
-    print('Sent receipt to server. Closing.')
+    print('Sent receipt to server. Waiting for acknowledgment...')
+    
+    # Wait for server's receipt acknowledgment
+    ack = recv_json_line(s, timeout=5)
+    if ack and ack.get('type') == 'receipt_ack':
+        print('Received server receipt acknowledgment.')
+        server_receipt = ack.get('payload', {})
+        if server_receipt:
+            print(f"Server transcript hash: {server_receipt.get('transcript_sha256', 'N/A')}")
+    else:
+        print('Did not receive receipt acknowledgment from server.')
+    
+    print('Closing connection.')
     s.close()
 
 if __name__ == '__main__':

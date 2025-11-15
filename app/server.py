@@ -24,7 +24,7 @@ def now_ms():
 def recv_json_line(sock, timeout=None):
     """
     Read bytes from `sock` until a newline and return the parsed JSON object.
-    Returns None on EOF/timeout.
+    Returns None on EOF/timeout/connection errors.
     """
     buf = []
     sock.settimeout(timeout)
@@ -37,6 +37,9 @@ def recv_json_line(sock, timeout=None):
                 break
             buf.append(ch)
     except socket.timeout:
+        return None
+    except (ConnectionResetError, ConnectionAbortedError, BrokenPipeError, OSError):
+        # Connection was closed/aborted by peer
         return None
     finally:
         sock.settimeout(None)
@@ -245,6 +248,8 @@ def handle_client(conn, addr):
             print('Received receipt from client:', obj.get('payload',{}).get('transcript_sha256'))
             receipt = tx.export_receipt(my_key, 'server', 1, last_seq_received or 0)
             conn.sendall((json.dumps({'type':'receipt_ack','payload':receipt})+'\n').encode())
+            print('Sent receipt acknowledgment to client. Closing connection.')
+            break  # Exit loop after receipt exchange
         else:
             print('Unknown message type', obj.get('type'))
 
