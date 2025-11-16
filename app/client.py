@@ -10,6 +10,7 @@ CERTS = Path('certs')
 CA_CERT = CERTS/'ca.crt'
 CLIENT_KEY = CERTS/'client.local.key'
 CLIENT_CERT = CERTS/'client.local.crt'
+prev_msg="1|1763288873009|MIs3MMUpz5RrGXNaRZ0gsw==|dw3Z7sYemdf4ChHNgrSskIWSO3lblfTSzoJ0nV+2XXrGqLU6LJX1necidB6ZMDGBG+dPCbJu5nRGJCfAwNRlmtQIxsV7WhJLsz5cY0xf5OhP4z97GRnbCkPFvsozAAvPDeuzI5c1jeazp/zX37G4YQP98saBnrSmzR1M2lN80cvf16xoYIY9Bprg7N1SwL3bpEPmBCGUsOWIQ5gqf1QRY9fvqFga9YeoZShi9Wlvr3k9CKRqEufRga0UN6oXM1lLgNYioYqc+Iig0nAWAUkY8ny46cNncaWuqa9NB3g2Vx9mvsFR+TFEni8hTB+uwdkAVpwwBALOwbGT/H945zRX6g==|281f86a13ecb4ed7fa0a35a30a757557133328ce79df8533e4b626a3e539a288|92882f59dfc83b7c73321fdf7bd29c6bdfeda497d0b63fd8c8865769792e424b"
 
 TIME_SKEW_MS = 60 * 1000  # 60 seconds allowed skew
 
@@ -18,6 +19,12 @@ def load_priv_key(path):
 
 def now_ms():
     return int(time.time() * 1000)
+
+def flip_bit_in_b64(b64str):
+    data = bytearray(base64.b64decode(b64str))
+    data[0] ^= 1  # flips lowest bit of first byte
+    return base64.b64encode(bytes(data)).decode()
+
 
 def recv_json_line(sock, timeout=None):
     """
